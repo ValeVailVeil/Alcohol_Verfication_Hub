@@ -1,0 +1,8 @@
+{
+  "name": "TTB Label Compliance Verifier",
+  "description": "I threw my code in to Gemini and it spat out this project",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
