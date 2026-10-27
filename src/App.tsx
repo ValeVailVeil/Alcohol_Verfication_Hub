@@ -24,6 +24,7 @@ export default function App() {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [activeModel, setActiveModel] = useState<string>('gemini-3.5-flash-lite');
+  const [enableFuzzyMatching, setEnableFuzzyMatching] = useState<boolean>(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadInputId = useId();
 
@@ -61,8 +62,8 @@ export default function App() {
       return;
     }
 
-    // Fuzzy match filenames to group images for the same beverage
-    const groups = groupImagesByBeverage(rawItems);
+    // Match filenames to group images for the same beverage (fuzzy or exact)
+    const groups = groupImagesByBeverage(rawItems, enableFuzzyMatching);
     setBeverages(groups);
     setSelectedGroupIndex(0);
     setSelectedImageIndex(0);
@@ -168,9 +169,9 @@ export default function App() {
         className="hidden"
       />
 
-      {/* SCREEN A: INITIAL STATE (Only ONE button on the screen) */}
+      {/* SCREEN A: INITIAL STATE (Only ONE primary button with fuzzy match toggle) */}
       {beverages.length === 0 && !isProcessing && (
-        <div className="text-center max-w-sm space-y-5 animate-fade-in">
+        <div className="text-center max-w-sm space-y-6 animate-fade-in">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">
               TTB Label Verifier
@@ -180,14 +181,34 @@ export default function App() {
             </p>
           </div>
 
-          <div>
-            <label
-              htmlFor={uploadInputId}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-sm rounded-xl shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
-            >
-              <Upload className="h-4 w-4" />
-              <span>Upload Label Photos</span>
-            </label>
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor={uploadInputId}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-sm rounded-xl shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Upload Label Photos</span>
+              </label>
+            </div>
+
+            {/* Toggle Switch for Fuzzy Search (On by default) */}
+            <div className="pt-1 flex flex-col items-center">
+              <label className="inline-flex items-center gap-2 text-xs text-zinc-300 hover:text-white cursor-pointer select-none transition-colors">
+                <input
+                  type="checkbox"
+                  checked={enableFuzzyMatching}
+                  onChange={(e) => setEnableFuzzyMatching(e.target.checked)}
+                  className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-amber-400 focus:ring-0 focus:ring-offset-0 cursor-pointer accent-amber-400"
+                />
+                <span className="font-medium">Fuzzy match beverage names</span>
+              </label>
+              <p className="text-[11px] text-zinc-500 mt-1 max-w-xs text-center leading-normal">
+                {enableFuzzyMatching 
+                  ? 'Groups similar filenames. Uncheck if bottle names differ only by numbers.' 
+                  : 'Exact filename matching only. Orientation tags (front, back, etc.) are still stripped.'}
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -203,7 +224,7 @@ export default function App() {
               Analyzing Beverage Labels...
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Fuzzy-matching bottle angles and running Gemini 3.5 Flash Lite
+              {enableFuzzyMatching ? 'Fuzzy-matching bottle angles' : 'Exact stem matching (orientation tags stripped)'} and running Gemini 3.5 Flash Lite
             </p>
           </div>
         </div>

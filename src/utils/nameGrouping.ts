@@ -27,7 +27,8 @@ const ORIENTATION_KEYWORDS = [
 ];
 
 /**
- * Normalizes a filename to a canonical beverage stem.
+ * Normalizes a filename to a canonical beverage stem by stripping orientation and location tags.
+ * Kept consistent across both exact and fuzzy matching modes.
  * e.g. "silver_peak_cabernet_front_2021.jpg" -> "silver peak cabernet 2021"
  */
 export function extractBeverageStem(filename: string): { stem: string; orientation?: string } {
@@ -93,17 +94,30 @@ function titleCase(str: string): string {
 }
 
 /**
- * Groups incoming image items by beverage name using fuzzy matching.
+ * Groups incoming image items by beverage name.
+ * - In both modes, orientation tags (front, back, etc.) are stripped.
+ * - When enableFuzzy is true: matches similar names using string distance (threshold 0.70).
+ * - When enableFuzzy is false: requires exact match of the stripped stem (prevents merging bottles differing only in numbers).
  */
-export function groupImagesByBeverage(images: UploadedImageItem[]): BeverageGroup[] {
+export function groupImagesByBeverage(
+  images: UploadedImageItem[],
+  enableFuzzy: boolean = true
+): BeverageGroup[] {
   const groups: BeverageGroup[] = [];
 
   for (const img of images) {
     const { stem, orientation } = extractBeverageStem(img.fileName);
     img.detectedOrientation = orientation;
 
-    // Look for existing group with high similarity (threshold 0.70)
-    let matchedGroup = groups.find(g => getSimilarity(g.stem, stem) >= 0.70);
+    let matchedGroup: BeverageGroup | undefined;
+
+    if (enableFuzzy) {
+      // Fuzzy similarity matching
+      matchedGroup = groups.find(g => getSimilarity(g.stem, stem) >= 0.70);
+    } else {
+      // Exact stem matching (orientation tags still removed)
+      matchedGroup = groups.find(g => g.stem.toLowerCase() === stem.toLowerCase());
+    }
 
     if (matchedGroup) {
       matchedGroup.images.push(img);
